@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Novel Player</title>
+<style>
+
+    #cover {
+        width: 214px;
+        height: 308px;
+    }
+        #mp3-player {
+            text-align: center;
+            padding: 20px;
+        }
+
+        audio {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        #controls button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        #selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #bookselector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #bookselector input {
+            margin: 0 10px;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f4f4f4;
+            padding: 10px;
+        }
+
+        #container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 0pt;
+        }
+
+        textarea {
+            width: 80%;
+            height: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            background-color: #f8f8f8;
+            resize: none;
+            font-size: 12px;
+        }
+
+
+</style>
+</head>
+<body>
+<div id="mp3-player">
+    <div id="covercontainer">
+        <img id="cover" src="sample/jpg" alt="Cover Image">
+    </div>
+    <div class="nav"><h2 id="navtext">Novel Reader</h2></div>
+    <audio id="audio-player" controls src="sample/mp3"></audio>
+    <div id="controls">
+        <button id="prev">Last</button>
+        <button id="play">Pause/Play</button>
+        <button id="next">Next</button>
+    </div>
+</div>
+<div id="selector">
+    <div id="bookselector">
+        <input type="text" id="book" placeholder="Book">
+        <input type="text" id="chapter" placeholder="Chapter">
+    </div>
+    <button id="submit" onclick="updateTrackSource()">Submit</button>
+</div>
+<br>
+<div id="container">
+    <textarea id="text" rows="10" cols="50" disabled>
+    Genesis 1:1 In the beginning God created the heavens and the earth.
+    </textarea>
+</div>
+
+<script>
+    const audioPlayer = document.getElementById('audio-player');
+    const playBtn = document.getElementById('play');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const book = document.getElementById('book');
+    const chapter = document.getElementById('chapter');
+    const bookcover = document.getElementById('cover');
+
+    var bookid = 54583; // Assuming your index starts at 1
+    var chapterid = 35154417; // Assuming your index starts at 1
+    var lastChapter = 35154417; // Assuming your index starts at 1
+    var currentChapter = 35154417; // Assuming your index starts at 1
+    var nextChapter = 35154417; // Assuming your index starts at 1
+    var textChapter = "Genesis 1:1 In the beginning God created the heavens and the earth.";
+
+    function updateTrackSource() {
+        bookid = book.value;
+        chapterid = chapter.value;
+        // audioPlayer.src = `/tts/${bookid}/${chapterid}`;
+        // 200 -> play, 503 -> alert message
+        fetch(`/tts/${bookid}/${chapterid}`)
+            .then(response => {
+                if (response.status === 200) {
+                    audioPlayer.src = `/tts/${bookid}/${chapterid}`;
+                } else {
+                    alert(response.body);
+                }
+            });
+
+        bookcover.src = `/img/${bookid}`;
+        console.log(bookid, chapterid, audioPlayer.src);
+        //
+        // fetch(`/${bookid}/${chapterid}`) -> text, lastChapter, nextChapter
+        fetch(`/${bookid}/${chapterid}`)
+            .then(response => response.json())
+            .then(data => {
+                lastChapter = data.lastI;
+                currentChapter = data.currentI;
+                nextChapter = data.nextI;
+                textChapter = data.textd;
+                document.getElementById('text').value = textChapter.split('\n').slice(3).join('\n');
+                document.getElementById('navtext').textContent = textChapter.split('\n')[0];
+
+            })
+            .then(() => {
+                fetch(`/tts/${bookid}/${lastChapter}`, {method: 'POST'}).catch()// pre-load last chapter
+                fetch(`/tts/${bookid}/${nextChapter}`, {method: 'POST'}).catch()// pre-load next chapter
+            });
+    }
+
+    playBtn.addEventListener('click', function () {
+        try {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+            } else {
+                audioPlayer.pause();
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    });
+
+    prevBtn.addEventListener('click', function () {
+        chapterid = lastChapter;
+        document.getElementById('chapter').value = chapterid;
+        updateTrackSource();
+        audioPlayer.play();
+    });
+
+    nextBtn.addEventListener('click', function () {
+        chapterid = nextChapter;
+        document.getElementById('chapter').value = chapterid;
+        updateTrackSource();
+        audioPlayer.play();
+    });
+
+    // Initialize the first track
+    // updateTrackSource();
+
+    // Optional: Update the play button text based on the play state
+    audioPlayer.onplay = () => playBtn.textContent = 'Pause';
+    audioPlayer.onpause = () => playBtn.textContent = 'Play';
+
+    audioPlayer.addEventListener('ended', function () {
+        // Call the playNext function when the audio ends
+        chapterid = nextChapter;
+        document.getElementById('chapter').value = chapterid;
+        updateTrackSource();
+        audioPlayer.play();
+    });
+
+    audioPlayer.addEventListener('loadeddata', function () {
+        try{
+            audioPlayer.play()
+            .catch(e => {
+                console.log("Auto play failed");
+                console.log(e);
+            });
+        } catch (e) {
+            console.log(e);
+        } // Auto play, error if not interacted with document
+    });
+
+    // mark wheel event handler as passive
+    window.addEventListener("wheel", function (e) {
+        if (e.target.id === 'audio-player') {
+            e.preventDefault();
+        }
+    }, {passive: true});
+
+    document.addEventListener('keydown', function(event) {
+        // Check if the pressed key is 'Space'
+        if (event.code === 'Space' || event.key === ' ') {
+        // Prevent the default space key action (e.g., scrolling the page down)
+        event.preventDefault();
+        try {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+            } else {
+                audioPlayer.pause();
+            }
+        } catch (e) {
+            console.log(e);
+        }
+        // Your custom action here
+        console.log('Space key was pressed.');
+    }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+            const audioPlayer = document.getElementById('audio-player');
+            const lyrics = document.getElementById('text');
+
+            audioPlayer.addEventListener('timeupdate', function() {
+                const percentage = this.currentTime / this.duration;
+                const maxScrollTop = lyrics.scrollHeight - lyrics.clientHeight;
+                lyrics.scrollTop = percentage * maxScrollTop;
+            });
+        });
+
+</script>
+</body>
+</html>
