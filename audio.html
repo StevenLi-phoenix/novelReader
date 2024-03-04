@@ -60,14 +60,6 @@
         textarea {
             width: 80%;
             height: 100%;
-            padding: 12px 20px;
-            margin: 8px 0;
-            box-sizing: border-box;
-            border: 2px solid #ccc;
-            border-radius: 4px;
-            background-color: #f8f8f8;
-            resize: none;
-            font-size: 12px;
         }
 
 
@@ -109,12 +101,12 @@
     const chapter = document.getElementById('chapter');
     const bookcover = document.getElementById('cover');
 
-    var bookid = 54583; // Assuming your index starts at 1
-    var chapterid = 35154417; // Assuming your index starts at 1
-    var lastChapter = 35154417; // Assuming your index starts at 1
-    var currentChapter = 35154417; // Assuming your index starts at 1
-    var nextChapter = 35154417; // Assuming your index starts at 1
-    var textChapter = "Genesis 1:1 In the beginning God created the heavens and the earth.";
+    var bookid = 0; // Assuming your index starts at 1
+    var chapterid = 0; // Assuming your index starts at 1
+    var lastChapter = 0; // Assuming your index starts at 1
+    var currentChapter = 0; // Assuming your index starts at 1
+    var nextChapter = 0; // Assuming your index starts at 1
+    var textChapter = "This is where it will display text";
 
     function updateTrackSource() {
         bookid = book.value;
